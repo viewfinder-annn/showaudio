@@ -1,6 +1,7 @@
 from flask import Flask, render_template, jsonify, request
 import glob
 import os
+from filetree import *
 
 import argparse
 
@@ -27,19 +28,27 @@ def index():
 
 @app.route('/files')
 def list_files():
+    # 列出第一层目录
+    init_file_tree(root_path)
+    # print(id2node)
+    return jsonify(id2node)
+
+@app.route('/expand')
+def expand_dir():
     # 递归列出所有子目录和文件
-    file_tree = []
-    file_tree.append(root_path)
-    for root, dirs, files in os.walk(root_path):
-        for dirname in dirs:
-            file_tree.append(os.path.join(root, dirname))
-        # for filename in files:
-        #     file_tree.append(os.path.join(root, filename))
-    return jsonify(file_tree)
+    expand_file_node(int(request.args.get('id')))
+    return jsonify(id2node)
+
+@app.route('/collapse')
+def collapse_dir():
+    # 递归列出所有子目录和文件
+    collapse_file_node(int(request.args.get('id')))
+    return jsonify(id2node)
 
 @app.route('/audio-files')
 def audio_files():
-    directory = request.args.get('dir')  # 获取传递的目录参数
+    directory_id = request.args.get('dir')  # 获取传递的目录参数, 为id的值
+    directory = id2node[int(directory_id)]['dir']
     res = {}
     if request.args.get('parseall') is None:
         audio_files = [glob.glob(directory + '/*.' + ext) for ext in ['mp3', 'wav', 'flac']]
